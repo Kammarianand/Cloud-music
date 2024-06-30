@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web 3.0 Music Player</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
+        body, html { 
+            margin: 0; 
+            padding: 0; 
+            overflow: hidden; 
+            font-family: 'Orbitron', sans-serif;
+            background: linear-gradient(45deg, #0f0c29, #302b63, #24243e);
+            height: 100vh;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+        .cd-container {
+            position: relative;
+            width: 150px;
+            height: 150px;
+        }
+        .cd {
+            width: 100%;
+            height: 100%;
+            background: conic-gradient(from 0deg, #ff00ea, #00ffff, #ff00ea);
+            border-radius: 50%;
+            animation: spin 4s linear infinite;
+        }
+        .cd-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            background: #fff;
+            border-radius: 50%;
+        }
+        .cd-strip {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.5);
+            transform-origin: center;
+            animation: spin 4s linear infinite reverse;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .visualizer {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            height: 40px;
+            width: 100%;
+        }
+        .visualizer-bar {
+            width: 3px;
+            background: linear-gradient(to top, #00ffff, #ff00ea);
+            transition: height 0.1s ease;
+        }
+        .glow {
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.7);
+        }
+        .btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            padding: 8px;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+        }
+        .music-note {
+            position: absolute;
+            font-size: 24px;
+            color: rgba(255, 255, 255, 0.5);
+            pointer-events: none;
+            animation: floatNote 10s linear infinite;
+        }
+        @keyframes floatNote {
+            0% { transform: translate(0, 100vh) rotate(0deg); }
+            100% { transform: translate(0, -100vh) rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center">
+    <div id="noteContainer"></div>
+    <div class="glass p-6 w-80 glow">
+        <h1 class="text-2xl font-bold text-center text-white mb-4"><span style="color: #fafad2">Kim's</span> Music Player</h1>
+        <div class="cd-container mx-auto mb-4">
+            <div class="cd"></div>
+            <div class="cd-center"></div>
+            <div class="cd-strip"></div>
+        </div>
+        
+        <h2 id="songTitle" class="text-lg font-bold text-white mb-2 truncate text-center">Loading...</h2>
+        <p class="text-xs text-cyan-300 mb-3 text-center">Futuristic Audio Experience</p>
+        
+        <div class="visualizer mb-3"></div>
+        
+        <div class="w-full h-2 bg-gray-600 rounded-full mb-3">
+            <div id="progress" class="w-0 h-full bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full transition-all duration-300"></div>
+        </div>
+        
+        <div class="flex justify-between items-center">
+            <button id="backward" class="btn text-white hover:text-cyan-300 transform hover:scale-110 transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+            </button>
+            <button id="playPause" class="btn text-white hover:text-cyan-300 transform hover:scale-110 transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </button>
+            <button id="forward" class="btn text-white hover:text-cyan-300 transform hover:scale-110 transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const songs = [
+            { title: "Kanmani Anbodu", url: "https://dl.dropboxusercontent.com/scl/fi/g7u0mgm2uba3gsa8ulu2t/kanmani-anbodu-song-ringtone-guna-manjummal-boys-trending-bgm-2123978084.mp3?rlkey=brlhfl6sqvqrdxdsjsj10kbxv&dl=0" },
+            { title: "Bhairava Anthem - Kalki 2898", url: "https://dl.dropboxusercontent.com/scl/fi/ymth85tu11td4zevghm81/Bhairava-Anthem-Kalki-2898-AD-_-HIndi-Ringtone-MobCup.Com.Co.mp3?rlkey=crh69rydnxxf6kvyuzn53rmns&dl=0" },
+            { title: "Theme of Kalki", url: "https://dl.dropboxusercontent.com/scl/fi/afu2u27ppn4txju8r1f48/Theme-Of-Kalki-Kalki-_-Prabhas-_-Telugu-Ringtone-MobCup.Com.Co.mp3?rlkey=e85bq4rvlkan53rzzr0cogc2s&dl=0" },
+            { title: "Woh Kisna Hai", url: "https://dl.dropboxusercontent.com/scl/fi/80shnieifv8h4104jdamc/Woh-Kisna-Hai-Kisna-Krishna-Slowed-Reverb-Song.mp3?rlkey=30lctbei53icd99j7sgakwce9&dl=0" },
+            { title: "Darshna - Hridayam", url: "https://dl.dropboxusercontent.com/scl/fi/n5yj5wh1ttey3p5fa3lb5/Darshana-Darshana-Rajendran-_-Kannada-Ringtone-Download-MobCup.Com.Co.mp3?rlkey=msmzd5n5zcefmuehxq1twl7g1&dl=0" },
+            { title: "Puthiyoru-Lokam-Hridayam", url: "https://dl.dropboxusercontent.com/scl/fi/4c2x120oy11jh93i2o2zy/Puthiyoru-Lokam-Hridayam-Puthiyoru-Lokam-Bgm.mp3?rlkey=424vrphudp6eooz54hi6ty47k&dl=0" },
+            { title: "Ignite-Instrumental", url: "https://dl.dropboxusercontent.com/scl/fi/ftlsmu8sjx7db1kcm0jck/Ignite-Instrumental-Alan-Walker-BGM.mp3?rlkey=6fcy5q3mtptn3edx34mk9iot5&dl=0" },
+            { title: "Hall Of Fame", url: "https://dl.dropboxusercontent.com/scl/fi/lre1i0xkklxt6mokoibw4/Hall-Of-Fame-Never-Back-Down-Motivation.mp3?rlkey=egt5cyu6tey2kc4cibmhe10ot&dl=0" },
+            { title: "Run Away", url: "https://dl.dropboxusercontent.com/scl/fi/wkc2fjtb8tqx0c5h0cowf/English-Best-Songs-Runaway.mp3?rlkey=uzi35mz04qto56ayq2p2jmds2&dl=0" },
+            { title: "Avidyanam-antas-sanskrit", url: "https://thekipkopbeats.com/mp3/wp-content/uploads/2023/10/avidyanam-antas-timira-ringtone-tkkb.mp3" },
+            {title: "Ragunandana - HanuMan",url: "https://dl.dropboxusercontent.com/scl/fi/3v6uu3qt9bmey9xwqys79/ragunanda.mp3?rlkey=9x5rwkufazmebt378551fcwnn&dl=0"}
+        ];
+
+        let currentSongIndex = 0;
+        const audio = new Audio(songs[currentSongIndex].url);
+        const playPauseBtn = document.getElementById('playPause');
+        const progress = document.getElementById('progress');
+        const backwardBtn = document.getElementById('backward');
+        const forwardBtn = document.getElementById('forward');
+        const visualizer = document.querySelector('.visualizer');
+        const songTitle = document.getElementById('songTitle');
+
+        playPauseBtn.addEventListener('click', togglePlay);
+        audio.addEventListener('timeupdate', updateProgress);
+        audio.addEventListener('ended', playNext);
+        backwardBtn.addEventListener('click', playPrevious);
+        forwardBtn.addEventListener('click', playNext);
+
+        for (let i = 0; i < 20; i++) {
+            const bar = document.createElement('div');
+            bar.className = 'visualizer-bar';
+            visualizer.appendChild(bar);
+        }
+
+        initializeVisualizer();
+        updateSongTitle();
+        createFloatingNotes();
+
+        function initializeVisualizer() {
+            const bars = document.querySelectorAll('.visualizer-bar');
+            bars.forEach(bar => {
+                const height = Math.random() * 40;
+                bar.style.height = `${height}px`;
+            });
+        }
+
+        function togglePlay() {
+            if (audio.paused) {
+                audio.play();
+                playPauseBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                `;
+                startVisualizer();
+            } else {
+                audio.pause();
+                playPauseBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                `;
+                stopVisualizer();
+            }
+        }
+
+        function updateProgress() {
+            const progressPercentage = (audio.currentTime / audio.duration) * 100;
+            progress.style.width = `${progressPercentage}%`;
+
+            if (progressPercentage >= 99.9) {
+                stopVisualizer();
+            }
+        }
+
+        function playNext() {
+            currentSongIndex = (currentSongIndex + 1) % songs.length;
+            playSong();
+        }
+
+        function playPrevious() {
+            currentSongIndex = (currentSongIndex - 1 + songs.length) % songs.length;
+            playSong();
+        }
+
+        function playSong() {
+            audio.src = songs[currentSongIndex].url;
+            audio.play();
+            updateSongTitle();
+            startVisualizer();
+        }
+
+        function updateSongTitle() {
+            songTitle.textContent = songs[currentSongIndex].title;
+        }
+
+        let visualizerInterval;
+        function startVisualizer() {
+            visualizerInterval = setInterval(() => {
+                const bars = document.querySelectorAll('.visualizer-bar');
+                bars.forEach(bar => {
+                    const height = Math.random() * 40;
+                    bar.style.height = `${height}px`;
+                });
+            }, 100);
+        }
+
+        function stopVisualizer() {
+            clearInterval(visualizerInterval);
+        }
+
+        function createFloatingNotes() {
+            const noteContainer = document.getElementById('noteContainer');
+            for (let i = 0; i < 20; i++) {
+                const note = document.createElement('div');
+                note.className = 'music-note';
+                note.textContent = '🎵';
+                note.style.left = `${Math.random() * 100}vw`;
+                note.style.animationDelay = `${Math.random() * 10}s`;
+                noteContainer.appendChild(note);
+            }
+        }
+
+        // GSAP animations
+        gsap.from('.glass', { duration: 1, opacity: 0, y: 50, ease: 'power3.out' });
+        gsap.to('.glow', { duration: 2, boxShadow: '0 0 30px rgba(0, 255, 255, 0.9)', repeat: -1, yoyo: true });
+    </script>
+</body>
+</html>
